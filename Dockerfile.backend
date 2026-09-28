@@ -1,0 +1,19 @@
+# Immagine temporanea con la nostra versione di GO
+FROM golang:1.19.1 AS builder
+# Cartella di lavoro
+WORKDIR /src/
+# Copia codice GO nell'immagine
+COPY . .
+# Crea eseguibili in questa immagine
+RUN go build -o /app/webapi ./cmd/webapi/
+
+# Effettiva creazione del container
+FROM debian:bookworm
+# Informazione sulla porta
+EXPOSE 3000 
+# Copia eseguibile dell'immagine sopra
+WORKDIR /app/
+COPY --from=builder /app/webapi ./
+# Non salvo database nel volume
+# Eseguito all'avvio
+CMD ["/app/webapi"]

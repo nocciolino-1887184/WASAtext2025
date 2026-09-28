@@ -1,0 +1,11 @@
+# Versione di node
+FROM node:lts AS builder
+WORKDIR /app
+COPY webui .
+# Compilazione Vue con yarn (non aggiornato)
+ENV YARN_IGNORE_NODE=1
+RUN yarn install
+RUN yarn run build-prod
+
+FROM nginx:stable
+COPY --from=builder /app/dist /usr/share/nginx/html

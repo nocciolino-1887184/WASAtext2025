@@ -1,0 +1,654 @@
+openapi: 3.0.1
+info:
+  title: WASAtext specification
+  description: |-
+    Documentazione circa la struttura e componenti del progetto.
+
+          WASA TEXT
+    _Connect with your friends effortlessly using WASAText! Send and receive messages, whether one-on-one
+    or in groups, all from the convenience of your PC. Enjoy seamless conversations with text or GIFs and easily stay in touch through your private chats or group discussions._
+  version: "1.0"
+  #innanzi tutto definiremo ogni componente che poi utilizzeremo
+components:
+  parameters:
+      # dato che usiamo spesso l'ID della foto, possiamo creare uno schema generale
+    MessageId:
+      name: messageId
+      in: path
+      required: true
+      description: Identificativo dei messaggi
+      schema:   
+        type: integer 
+        description: identificativo dei messaggi utilizzato più volte
+        format: int64
+        readOnly: true
+    ConvoId:
+      name: convoId
+      in: path
+      required: true
+      description: Identificativo delle conversazioni
+      schema:   
+        type: integer 
+        description: identifica le diverse chat o gruppi di un utente
+        format: int64
+        readOnly: true
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema: 
+        description: identificativo degli utenti
+        type: integer
+        format: int64
+        readOnly: true
+    ReactId:
+      name: reactId
+      in: path
+      required: true
+      schema:
+        description: identificatore di un commento
+        type: integer
+        format: int64
+        readOnly: true
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema:
+        description: identificatore di un gruppo
+        type: integer
+        format: int64
+        readOnly: true
+  schemas:
+    User:
+      title: Users
+      description: Questo oggetto rappresenta un utente
+      type: object
+      properties:
+        id:
+          description: identificativo dell'utente
+          type: integer
+          format: int64 #long
+          readOnly: true
+        nickname:
+          description: nome utente visibile a tutti e con cui si efettua il login
+          type: string
+          example: "Carlo"
+          pattern: "^.*?$"
+          minLength: 3
+          maxLength: 16
+        propic:
+          description: foto profilo dell'utente
+          type: string
+          format: byte
+          pattern: "^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+          minLength: 100    
+          maxLength: 1398102
+
+    Conversazione: 
+      title: Convos
+      description: Questo oggetto indica genericamente le conversazioni
+      type: object
+      properties:
+        id:
+          description: identificativo convo
+          type: integer
+          format: int64
+          readOnly: true
+        tipoConv:
+          description: conv può essere privata o gruppo
+          type: string
+          enum: ['chat', 'gruppo']
+          example: 'gruppo'
+          pattern: "^.*?$"
+          minLength: 4
+          maxLength: 6
+        nome: 
+          description: nome della conversazione
+          type: string
+          example: "Amici"
+          pattern: "^.*?$"
+          minLength: 3
+          maxLength: 20
+          
+    CreaConvo:
+      title: CreateConvo
+      description: questo schema serve alla creazione di una particolare convo
+      oneOf:
+        - {$ref: "#/components/schemas/Chat"}
+        - {$ref: "#/components/schemas/Gruppo"}
+      discriminator:
+        propertyName: tipo
+      properties:
+        tipo:
+          type: string
+          description: Tipologia di conversazione da creare
+          pattern: "^.*?$"
+          minLength: 4
+          maxLength: 6
+      required:
+        - tipo
+        
+    Chat:
+      title: Chats
+      description: Questo oggetto indica le conversazioni di ogni utente
+      type: object
+      properties:
+        id: 
+          description: identificativo chat
+          type: integer
+          format: int64
+          readOnly: true
+        sender:
+          description: di chi è la chat
+          type: integer
+          format: int64
+          readOnly: true
+    # dobbiamo creare uno stream che contenga tutte le chat dell'utente in ordine  cronologico inverso
+    Messaggio: #avrà dei metodi per metterli e toglierli
+      title: Messages   
+      description: un utente può inviare un messaggio testuale o immagine
+      type: object    # si può togliere e mettere un like
+      properties:
+        content:
+          description: contenuto del messaggio
+          type: string
+          example: "Ciao"
+          pattern: "^.*?$"
+          minLength: 1
+          maxLength: 200
+        timestamp:
+          description: quando viene inviato il messaggio
+          type: string
+          format: date-time
+          example: '2025-03-03T17:32:28Z'
+          pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+          minLength: 20
+          maxLength: 25
+          readOnly: true  #la data può esser visualizzata ma mai cambiata
+        sender:
+          description: CHI manda il messaggio
+          type: integer
+          format: int64
+          readOnly: true
+        status:
+          description: se è stato letto
+          type: string
+          enum: ["read", "unread"]
+          example: 'read'
+          pattern: "^.*?$"
+          minLength: 4
+          maxLength: 6
+    Reazioni:
+      title: Comments
+      description: le reazioni comprendono nickname e emoji
+      type: object
+      properties:
+        idComment:
+          description: identificativo di una specifica emoji
+          type: integer
+          format: int64
+          readOnly: true
+          example: 32748
+        nickname:
+          description: CHI lascia la reazione
+          type: string
+          pattern: "^.*?$"
+          example: "Marta"
+          minLength: 3
+          maxLength: 16
+        idMess:
+          description: messaggio a cui sono legate
+          type: integer
+          format: int64
+          readOnly: true
+          example: 32748
+          # uso un'API key per permettere solo a me stesso di cancellare (write) le reazioni
+    Gruppo:
+      title: Groups
+      description: ogni gruppo ha un nome e dei partecipanti
+      type: object
+      properties:
+        idGroup:
+          description: identificativo di un gruppo
+          type: integer
+          format: int64
+          readOnly: true
+          example: 10
+        nome:
+          description: nome gruppo
+          type: string
+          pattern: "^.*?$"
+          minLength: 3
+          maxLength: 20
+        membersCount:
+          description: quanti partecipanti ci sono
+          type: integer
+          minimum: 1
+          maximum: 40
+
+  securitySchemes:
+    # aggiungiamo un'Bearer authentication per identificare univocamente un utente. Questo sarà un metodo di sicurezza per creare e cancellare commenti, like, foto,
+    # il profilo e anche solo per accedere al proprio account tramite un token.
+    identificativeKey:
+      type: http
+      scheme: bearer
+  # applica la api Key globalmente     
+security:
+  - identificativeKey: []
+tags:
+  - name: "user"
+    description: Tutte le azioni svolte dagli utenti
+  - name: "messages"
+    description: Azioni svolte sui messaggi
+  - name: "login"
+    description: Operazione di login dove un utente viene fatto entrare con chiave di sicurezza
+  - name: "groups"
+    description: Tutte le azioni sui gruppi
+  - name: "chats"
+    description: Tutte le azioni su chat private
+  
+paths:
+  /users:
+    get:
+      tags: ["user"]
+      summary: ricerca di un utente
+      description: cerco un utente tramite il suo nickname
+      operationId: searchUser
+      responses:
+        '200':
+          description: fornisce info utente
+          content:
+            application/json:
+              schema:
+                description: restituisce il profilo dell'utente
+                type: array
+                items: {$ref: "#/components/schemas/User"} 
+                minItems: 0
+                maxItems: 100
+        '404':
+          description: utente non trovato
+  /users/{id}/nickname:
+   # devo fare l'update del nome utente di un user con un dato ID
+    put: # utente già esistente
+      tags: ["user"]
+      summary: cambio nome utente
+      description: cambiare username di un utente esistente
+      operationId: setMyUserName
+      parameters:
+        - {$ref: "#/components/parameters/UserId"}
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/User"}
+        required: true
+      security:
+        - identificativeKey: []
+      responses:
+        "200":
+          description: cambio andato a buon fine, restituisce lo stesso utente ma con username cambiato
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/User"}
+  /users/{id}/conversations:
+    get:
+      tags: ["user"]
+      summary: visualizzo tutte le chat di un utente
+      description: In questo modo siamo in grado di vedere tutte le conversazioni attive
+      parameters: 
+        - {$ref: "#/components/parameters/UserId"}
+      operationId: getMyConversations
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json: # dobbiamo restituire una lista di chat in ordine non cronologico
+              schema:
+                description: restituisce le chat iniziate
+                type: array   #tipo di output
+                uniqueItems: true
+               # le chat sono comunque diverse...
+                items: {$ref: "#/components/schemas/Conversazione"} 
+                minItems: 0
+                maxItems: 100
+        '404':
+          description: menu non trovato
+  # modifica dell'imagine profilo      
+  /users/{id}/propic:
+    put: # utente già esistente
+      tags: ["user"]
+      summary: cambio foto profilo 
+      description: cambiare foto profilo di un utente esistente
+      operationId: setMyPhoto
+      parameters:
+        - {$ref: "#/components/parameters/UserId"}
+      requestBody:
+        content:
+          application/json:
+            schema:  {$ref: "#/components/schemas/User"}
+      security:
+        - identificativeKey: []
+      responses:
+        "200":
+          description: cambio andato a buon fine, restituisce lo stesso utente ma con foto cambiata
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/User"}   
+  /users/{id}:
+    get:
+      tags: ["user"]
+      summary: visualizzo tutte le info di un utente
+      description: possiamo vedere avatar e nome dell'utente loggato
+      parameters: 
+        - {$ref: "#/components/parameters/UserId"}
+      operationId: getMyProfile
+      responses:
+        '200':
+          description: mostra info
+          content:
+            application/json: 
+              schema: {$ref: "#/components/schemas/User"} 
+        '404':
+          description: info non trovate
+                
+  /conversations:
+    post:
+      tags: ["chats"]
+      operationId: createConvo
+      summary: crea una chat oppure un gruppo
+      description: crea una una nuova conversazione per quel utente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:  {$ref: "#/components/schemas/CreaConvo"}
+      responses:
+        "201":
+          description: creazione avvenuta con successo
+          content:
+            application/json:
+              schema:  {$ref: "#/components/schemas/Conversazione"}
+        "404":
+          description: utente non trovato
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Conversazione"}
+
+  /conversations/{convoId}:
+    get:
+      tags: ["chats"]
+      operationId: getConversation
+      description: visualizza tutti i messaggi di una certa chat o gruppo
+      parameters:
+        - {$ref: "#/components/parameters/ConvoId"}
+      summary: restituisci una chat o gruppo
+      responses:
+        "200":
+          description: successo
+          content:
+            application/json:
+              schema:  {$ref: "#/components/schemas/Conversazione"}
+
+  /conversations/{convoId}/messages/{messageId}:
+    parameters:
+      - {$ref: "#/components/parameters/MessageId"}
+      - {$ref: "#/components/parameters/ConvoId"}
+    delete:
+      tags: ["messages"]
+      operationId: deleteMessage
+      summary: cancellazione messaggio
+      description: per cancellare un messaggio mi serve il suo ID 
+      security:
+        - identificativeKey: []
+      responses:
+        "204": {description: message deleted successfully}
+        "404": {description: resourced not found} #solo l'autore può cancellarlo
+  /conversations/{convoId}/forwarded:
+    parameters:
+      - {$ref: "#/components/parameters/ConvoId"}
+    post:   
+    #forwarded_from_message_id aggiungi CAMPO IN TABLE MESSAGES
+      tags: ["messages"]
+      operationId: forwardMessage
+      summary: inoltra messaggio
+      description: inoltra un messaggio specifico ad altre chat
+      requestBody:
+        content:
+          application/json:
+            schema:  {$ref: "#/components/schemas/Messaggio"}
+      responses:
+        "201":
+          description: messaggio inviato con successo
+          content:
+            application/json:
+              schema:  {$ref: "#/components/schemas/Messaggio"}
+
+  /conversations/{convoId}/messages:
+    parameters:
+      - {$ref: "#/components/parameters/ConvoId"}
+    post:
+      tags: ["chats"]
+      summary: si invia un messaggio
+      description: Del messaggio bisogna sapere mandante e ricevente
+      operationId: sendMessage
+      requestBody:
+        description: Crea nuovo messaggio con id
+        content:
+          application/json:
+            schema:  {$ref: "#/components/schemas/Messaggio"}
+      responses:
+        "201":
+          description: messaggio inviato
+          content:
+            application/json:
+              schema:    {$ref: "#/components/schemas/Messaggio"}
+        "401": {description: unauthorized sender}
+        
+  /messages/{messageId}/comments:
+    parameters:
+      - {$ref: "#/components/parameters/MessageId"}
+    post:  # ma deve esser idempotente
+      tags: ["messages"]
+      summary: si mette una reazione ad un messaggio
+      description: La reazione da parte di un utente può essere soltanto 1
+      operationId: commentMessage
+      requestBody:
+        description: Crea nuovo commento con id
+        content:
+          application/json:
+            schema:   {$ref: "#/components/schemas/Reazioni"}
+      responses:
+        "201":
+          description: un utente ha messo reazione ad un messaggio
+          content:
+            application/json:
+              schema:   {$ref: "#/components/schemas/Reazioni"}
+        "404": {description: message not found}
+        "409": {description: non puoi mettere una react 2 volte}
+    get:
+      tags: ["messages"]
+      summary: restituisco reazioni di un messaggio
+      description: Mostra emoji
+      operationId: getComment
+      responses:
+        "200":
+          description: successo
+          content:
+            application/json:
+              schema:  {$ref: "#/components/schemas/Reazioni"}
+      
+      
+  /messages/{messageId}/comments/{reactId}:
+    parameters:
+       # il commento può essere messo o tolto
+      - {$ref: "#/components/parameters/MessageId"}
+      - {$ref: "#/components/parameters/ReactId"}
+    delete:
+      tags: ["messages"]
+      operationId: uncommentMessage
+      summary: eliminazione reazione
+      description: Una volta messa una reazione, solo l'autore può cancellarlo (controllo autorizzazione)
+      responses:
+        "204": {description: Commento cancellato con successo}
+        "400": {description: Commento non trovato}
+        "401":  #Unauthorized
+          description: Autorizzazione negata
+      security: #in questo modo solo l'autore del commento potrà cancellarlo!
+        - identificativeKey: [] 
+        
+  /conversations/{convoId}/letti:
+    put:
+      tags: ["messages"]
+      summary: quando leggo i messaggi lo segno
+      description: aggiorno variabile a "letta" per un messaggio
+      operationId: setRead
+      parameters:
+        - {$ref: "#/components/parameters/ConvoId"}
+      requestBody:
+        content:
+          application/json:
+            schema:  {$ref: "#/components/schemas/User"}
+      security:
+        - identificativeKey: []
+      responses:
+        "204":
+          description: messaggio segnato come letto 
+     
+  /groups/{groupId}/members:
+    parameters:
+      - {$ref: "#/components/parameters/GroupId"}
+    post:
+      tags: ["groups"]
+      summary: aggiungi utente a gruppo
+      description: chi sta nel gruppo può aggiungere altri partecipanti
+      operationId: addToGroup
+      requestBody:
+        content:
+          application/json:
+            schema:   {$ref: "#/components/schemas/User"}
+      security:
+        - identificativeKey: []
+      responses:
+        "200":
+          description: utente aggiunto con successo
+          content:
+            application/json:
+              schema:   {$ref: "#/components/schemas/User"}
+    get:
+      tags: ["groups"]
+      summary: elenco membri
+      description: visualizzo i membri del gruppo
+      operationId: getMembers
+      responses:
+        '200':
+          description: fornisce info utenti nei gruppi
+          content:
+            application/json:
+              schema:
+                description: restituisce il profilo dell'utente
+                type: array
+                items: {$ref: "#/components/schemas/User"} 
+                minItems: 0
+                maxItems: 100
+
+  /groups/{groupId}/members/{id}:
+    delete:
+      parameters:
+        - {$ref: "#/components/parameters/GroupId"}
+        - {$ref: "#/components/parameters/UserId"}
+      tags: ['groups']
+      summary: eliminazione di un utente dal gruppo
+      description: Con questa operazione un utente può lasciare un gruppo di cui fa parte.
+      operationId: leaveGroup
+      security:
+        - identificativeKey: []
+      responses:
+        '400':
+          description: 'Bad request: utente non trovato'
+        '204':
+          description: Utente uscito dal gruppo.
+  /groups/{groupId}/name:
+    put: # utente già esistente
+      tags: ["groups"]
+      summary: cambio nome gruppo
+      description: cambiare nome di un gruppo esistente
+      operationId: setGroupName
+      parameters:
+        - {$ref: "#/components/parameters/GroupId"}
+      requestBody:
+        content:
+          application/json:
+            schema:  {$ref: "#/components/schemas/Gruppo"}
+      security:
+        - identificativeKey: []
+      responses:
+        "200":
+          description: cambio andato a buon fine, restituisce lo stesso gruppo ma con nome cambiato
+          content:
+            application/json:
+              schema:   {$ref: "#/components/schemas/Gruppo"}
+  /groups/{groupId}/photo:
+    put:
+      tags: ["groups"]
+      operationId: setGroupPhoto
+      summary: cambio foto gruppo
+      description: cambiare immagine di un gruppo esistente
+      parameters:
+        - {$ref: "#/components/parameters/GroupId"}
+      requestBody:
+        content:
+          application/json:
+            schema:   {$ref: "#/components/schemas/Gruppo"}
+      security:
+        - identificativeKey: []
+      responses:
+        "200":
+          description: cambio andato a buon fine
+          content:
+            application/json:
+              schema:   {$ref: "#/components/schemas/Gruppo"}
+  
+    
+  /session:
+    post:
+      tags: ["login"]
+      summary: Logs in the user
+      description: |-
+        If the user does not exist, it will be created,
+        and an identifier is returned.
+        If the user exists, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Utente da fornire nella schermata di login per accedere al correspondente profilo
+              properties:
+                name:
+                  description: Nome utente unico con cui si effettuano gli accessi al profilo
+                  type: string
+                  example: "Maria12"
+                  pattern: "^.*?$"
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      security:
+        - identificativeKey: []
+      responses:      
+        '201':
+          description: User log-in action successful
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Il nome utente inserito è corretto, viene restituito un identificatore
+                properties:
+                  identifier:
+                    description: Token univoco per ogni utente registrato
+                    type: string
+                    pattern: "^[0-9a-f]"
+                    example: "abcdef012345"
+                    minLength: 4
+                    maxLength: 16
