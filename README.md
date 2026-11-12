@@ -1,10 +1,15 @@
 # WASA text
 
-This repository contains the structure for [Web and Software Architecture](http://gamificationlab.uniroma1.it/en/wasa/) homework project.
-It has been described in class.
+WASA text is a full-stack instant messaging web application developed for the *Web and Software Architecture (WASA)* course. It features a RESTful backend written in **Go**, an **OpenAPI** specification, and a single-page frontend built with **Vue.js**.
 
-"Fantastic coffee (decaffeinated)" is a simplified version for the WASA course, not suitable for a production environment.
-The full version can be found in the "Fantastic Coffee" repository.
+> **Note:** The project architecture and build setup are based on the *"Fantastic Coffee (Decaffeinated)"* template provided for the WASA course
+
+## Key Features
+
+* **User Authentication & Profile:** Simplified login flow, username updates, and profile photo management
+* **1-to-1 & Group Conversations:** Create and manage private chats and group conversations (add/remove members, update group name and photo)
+* **Rich Messaging:** Send text messages and images, reply to specific messages, forward messages to other chats, and react with emojis
+* **Message Status & History:** Chronological message history with read/received status indicators
 
 ## Project structure
 
@@ -41,16 +46,6 @@ This repository uses `yarn` and a vendoring technique that exploits the ["Offlin
 
 You should commit the files inside the `.yarn` directory.
 
-## How to set up a new project from this template
-
-You need to:
-
-* Change the Go module path to your module path in `go.mod`, `go.sum`, and in `*.go` files around the project
-* Rewrite the API documentation `doc/api.yaml`
-* If no web frontend is expected, remove `webui` and `cmd/webapi/register-webui.go`
-* Update top/package comment inside `cmd/webapi/main.go` to reflect the actual project usage, goal, and general info
-* Update the code in `run()` function (`cmd/webapi/main.go`) to connect to databases or external resources
-* Write API code inside `service/api`, and create any further package inside `service/` (or subdirectories)
 
 ## How to build
 
@@ -87,7 +82,7 @@ If you want to launch the WebUI, open a new tab and launch:
 yarn run dev
 ```
 
-## How to build for production / homework delivery
+## How to build for production 
 
 ```shell
 ./open-node.sh
@@ -97,18 +92,6 @@ yarn run build-prod
 
 For "Web and Software Architecture" students: before committing and pushing your work for grading, please read the section below named "My build works when I use `yarn run dev`, however there is a Javascript crash in production/grading"
 
-## Known issues
-
-### My build works when I use `yarn run dev`, however there is a Javascript crash in production/grading
-
-Some errors in the code are somehow not shown in `vite` development mode. To preview the code that will be used in production/grading settings, use the following commands:
-
-```shell
-./open-node.sh
-# (here you're inside the container)
-yarn run build-prod
-yarn run preview
-```
 
 ## License
 
